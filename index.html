@@ -101,9 +101,30 @@
   .entry ul{margin:0 0 16px; padding-left:18px; font-size:14.5px; line-height:1.65; color:var(--ink);}
   .entry li{margin-bottom:5px;}
   .tags{display:flex; flex-wrap:wrap; gap:7px;}
-  .tag{font-size:12px; color:var(--muted); border:1px solid var(--line); padding:3px 9px; border-radius:20px;}
+  .tag{
+    font-size:12px; color:#0B0F0D; background:#FFFFFF; border:none; font-weight:600;
+    padding:5px 13px; border-radius:20px;
+    box-shadow:0 0 6px 2px rgba(57,255,143,0.6), 0 1px 3px rgba(0,0,0,0.35);
+    animation:tagBlink 2.4s ease-in-out infinite;
+  }
+  @keyframes tagBlink{
+    0%,100%{ box-shadow:0 0 6px 2px rgba(57,255,143,0.6), 0 1px 3px rgba(0,0,0,0.35); }
+    50%{ box-shadow:0 0 1px 0px rgba(57,255,143,0.15), 0 1px 3px rgba(0,0,0,0.35); }
+  }
+  .tag:nth-child(2n){ animation-delay:.35s; }
+  .tag:nth-child(3n){ animation-delay:.7s; }
+  @media (prefers-reduced-motion: reduce){ .tag{animation:none;} }
 
-  /* PROJECT */
+  /* GITHUB ACTIVITY */
+  .activity-wrap{overflow-x:auto; padding-bottom:4px;}
+  .contrib-grid{display:flex; gap:3px;}
+  .contrib-week{display:flex; flex-direction:column; gap:3px;}
+  .contrib-day{width:10px; height:10px; border-radius:2px; background:var(--surface); border:1px solid var(--line);}
+  .contrib-day.lvl1{background:rgba(57,255,143,0.28); border-color:transparent;}
+  .contrib-day.lvl2{background:rgba(57,255,143,0.5); border-color:transparent;}
+  .contrib-day.lvl3{background:rgba(57,255,143,0.75); border-color:transparent;}
+  .contrib-day.lvl4{background:var(--green); border-color:transparent; box-shadow:0 0 4px 1px rgba(57,255,143,0.7);}
+  .activity-note{font-size:12.5px; color:var(--muted); margin-top:14px;}
   .project{background:var(--surface); border:1px solid var(--line); border-radius:6px; padding:26px 28px;}
   .project .id{color:var(--green); font-size:13px; margin-bottom:6px; font-weight:500;}
   .project h3{margin:0 0 12px; font-size:18px; font-weight:600;}
@@ -148,6 +169,7 @@
       <a href="#experience">Experience</a>
       <a href="#build">Build</a>
       <a href="#stack">Stack</a>
+      <a href="#activity">Activity</a>
       <a href="#education">Education</a>
       <a href="#contact">Contact</a>
     </nav>
@@ -236,6 +258,57 @@
       <div class="stack-cat"><h4>Concepts</h4><ul><li>System design basics</li><li>Low-level design</li><li>High-level design (learning)</li></ul></div>
     </div>
   </section>
+
+  <section id="activity">
+    <h2>Shipping log</h2>
+    <p class="section-sub">Live GitHub contribution activity — fetched fresh on every visit, including LeetCode syncs.</p>
+    <div class="activity-wrap">
+      <div class="contrib-grid" id="contribGrid"></div>
+    </div>
+    <p class="activity-note mono" id="contribNote">Loading github.com/VIMAL-RKV activity…</p>
+  </section>
+
+  <script>
+  (function(){
+    var USERNAME = "VIMAL-RKV";
+    var grid = document.getElementById('contribGrid');
+    var note = document.getElementById('contribNote');
+    fetch('https://github-contributions-api.jogruber.de/v4/' + USERNAME + '?y=last')
+      .then(function(r){ if(!r.ok) throw new Error('bad response'); return r.json(); })
+      .then(function(data){
+        var days = data.contributions || [];
+        if(!days.length) throw new Error('no data');
+        var byDate = {};
+        days.forEach(function(d){ byDate[d.date] = d; });
+        var last = new Date(days[days.length-1].date);
+        var start = new Date(last); start.setDate(start.getDate() - 370);
+        while(start.getDay() !== 0){ start.setDate(start.getDate()-1); }
+        var cursor = new Date(start);
+        var total = 0;
+        grid.innerHTML = '';
+        while(cursor <= last){
+          var week = document.createElement('div'); week.className = 'contrib-week';
+          for(var i=0;i<7;i++){
+            var iso = cursor.toISOString().slice(0,10);
+            var rec = byDate[iso];
+            var lvl = rec ? rec.level : 0;
+            var count = rec ? rec.count : 0;
+            total += count;
+            var cell = document.createElement('div');
+            cell.className = 'contrib-day' + (lvl>0 ? ' lvl'+lvl : '');
+            cell.title = iso + ' — ' + count + ' contribution' + (count===1?'':'s');
+            week.appendChild(cell);
+            cursor.setDate(cursor.getDate()+1);
+          }
+          grid.appendChild(week);
+        }
+        note.textContent = total + ' contributions in the last year — github.com/' + USERNAME;
+      })
+      .catch(function(){
+        note.textContent = 'Live graph unavailable right now — view directly on github.com/' + USERNAME;
+      });
+  })();
+  </script>
 
   <section id="education">
     <h2>Education</h2>
